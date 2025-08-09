@@ -23,9 +23,9 @@ export const Navbar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3 group">
             <div className="p-2 rounded-lg bg-primary transition-all duration-300">
-              <Award className="w-6 h-6 text-[#6bdaff]" />
+              <Award className="w-6 h-6 " />
             </div>
-            <span className="text-xl font-bold text-white">Test_School</span>
+            <span className="text-xl font-bold text-white">Test_Matrix</span>
           </Link>
 
           {/* Desktop Navigation */}
