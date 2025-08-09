@@ -120,16 +120,18 @@ export default function ExamUI() {
             {questionObj.options.map((option, index) => {
               const isSelected = selected === index;
               const isCorrect = correct === index;
-              let style = "";
+
+              let borderColor = "border-gray-300"; // default border
               if (selected !== undefined) {
-                if (isCorrect) style = "bg-green-200 border-green-500";
+                if (isCorrect) borderColor = "border-green-500";
                 else if (isSelected && !isCorrect)
-                  style = "bg-red-200 border-red-500";
+                  borderColor = "border-red-500";
               }
+
               return (
                 <div
                   key={index}
-                  className={`p-4 rounded-lg border transition-all duration-300 cursor-pointer hover:border-primary/40 hover:bg-primary/5 ${style}`}
+                  className={`p-4 rounded-lg border ${borderColor} transition-all duration-300 cursor-pointer hover:border-primary/40`}
                   onClick={() => handleOptionSelect(index)}
                 >
                   <div className="flex items-center gap-3">
@@ -171,7 +173,7 @@ export default function ExamUI() {
 
   if (isExamActive && currentStep) {
     return (
-      <div className="min-h-screen bg-background cyber-grid">
+      <div className="min-h-screen bg-background cyber-grid mt-4">
         <div className="fixed top-0 w-full z-50  border-b border-primary/20 p-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-4">

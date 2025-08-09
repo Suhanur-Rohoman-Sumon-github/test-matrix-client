@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import confetti from "canvas-confetti";
 import {
@@ -25,9 +24,17 @@ import {
   Lock,
   AlertCircle,
   Timer,
+  BookOpen,
+  Pencil,
+  Book,
+  Headphones,
+  Text,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CompletionPage from "@/components/CompletionPage";
+import Hero from "@/components/exam/Hero";
+import Competency from "@/components/exam/Competency";
+import Security from "@/components/exam/Security";
 
 const Exam = () => {
   const questions = [
@@ -108,7 +115,7 @@ const Exam = () => {
   ];
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [currentStep, setCurrentStep] = useState<number | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState(2640); // 44 minutes for 44 questions
+  const [timeRemaining, setTimeRemaining] = useState(10);
   const [currentQuestion, setCurrentQuestion] = useState(1);
   const [isExamActive, setIsExamActive] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState<
@@ -195,11 +202,12 @@ const Exam = () => {
   ];
 
   const competencyAreas = [
-    { name: "Digital Fundamentals", icon: Brain, questions: 8 },
-    { name: "Programming Logic", icon: Code, questions: 12 },
-    { name: "Web Development", icon: Globe, questions: 10 },
-    { name: "Database Management", icon: Database, questions: 8 },
-    { name: "Cybersecurity", icon: Shield, questions: 6 },
+    { name: "Basic Grammar", icon: BookOpen, questions: 8 },
+    { name: "Vocabulary & Usage", icon: Pencil, questions: 12 },
+    { name: "Reading Comprehension", icon: Book, questions: 10 },
+    { name: "Listening Skills", icon: Headphones, questions: 8 },
+    { name: "Speaking & Pronunciation", icon: Globe, questions: 6 },
+    { name: "Writing Skills", icon: Text, questions: 7 },
   ];
 
   useEffect(() => {
@@ -232,7 +240,7 @@ const Exam = () => {
     setCurrentStep(stepNumber);
     setIsExamActive(true);
     setCurrentQuestion(1);
-    setTimeRemaining(2640); // Reset timer
+    setTimeRemaining(2640);
     toast({
       title: "Assessment Started",
       description: `Step ${stepNumber} assessment is now active. Good luck!`,
@@ -303,10 +311,10 @@ const Exam = () => {
 
               if (selected !== undefined) {
                 if (isCorrect) {
-                  bgStyle = "bg-green-500 border-green-600";
+                  bgStyle = " glass-card border-green-600";
                   textStyle = "text-white";
                 } else if (isSelected && !isCorrect) {
-                  bgStyle = "bg-red-500 border-red-600 opacity-80";
+                  bgStyle = " border-red-600 opacity-80";
                   textStyle = "text-white";
                 }
               }
@@ -360,47 +368,26 @@ const Exam = () => {
     );
   };
 
-  if (isSubmitted) {
+  if ((isExamActive && currentStep) || isSubmitted) {
     const score = calculateScore();
     return (
-      <CompletionPage
-        score={score}
-        total={questions.length}
-        questions={questions}
-        selectedOptions={selectedOptions}
-      />
-    );
-  }
-
-  if (isExamActive && currentStep) {
-    return (
-      <div className="min-h-screen bg-background cyber-grid">
-        <div className="fixed top-0 w-full z-50  border-b border-primary/20 p-4">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Shield className="w-6 h-6 text-primary-glow" />
-              <span className="font-semibold text-primary-glow">
-                Step {currentStep} Assessment - ACTIVE
-              </span>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="text-sm text-muted-foreground">
-                Secure Browser Mode
-              </div>
-              <Button variant="destructive" size="sm">
-                End Assessment
-              </Button>
-            </div>
-          </div>
-        </div>
-
+      <div className="min-h-screen bg-background cyber-grid ">
         <div className="pt-24 pb-8">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Card className=" border-primary/20">
-              <CardContent className="p-8">
-                <MockQuestion />
-              </CardContent>
-            </Card>
+            {isSubmitted ? (
+              <CompletionPage
+                score={score}
+                total={questions.length}
+                questions={questions}
+                selectedOptions={selectedOptions}
+              />
+            ) : (
+              <Card className=" border-primary/20">
+                <CardContent className="p-8">
+                  <MockQuestion />
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
@@ -409,31 +396,8 @@ const Exam = () => {
 
   return (
     <div className="min-h-screen bg-background cyber-grid">
-      <Navigation />
-
       {/* Hero Section */}
-      <section className="pt-32 pb-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-8">
-            <div className="space-y-4">
-              <div className="inline-flex items-center px-6 py-3 rounded-full bg-primary/10 border border-primary/20  ">
-                <Award className="w-5 h-5 text-primary-glow mr-2" />
-                <span className="text-primary-glow font-medium">
-                  Digital Competency Assessment
-                </span>
-              </div>
-              <h1 className="text-5xl md:text-6xl font-bold">
-                <span className="glow-text">Assessment</span>
-                <span className="text-primary-glow"> Portal</span>
-              </h1>
-              <p className="text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-                Progressive 3-step evaluation system from A1 to C2 certification
-                levels. Secure, timed, and comprehensive testing environment.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <Hero />
 
       {/* Assessment Steps */}
       <section className="py-20 ">
@@ -539,76 +503,10 @@ const Exam = () => {
       </section>
 
       {/* Competency Areas */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-6 mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold glow-text">
-              Assessment Coverage
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Comprehensive evaluation across key digital competency areas
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {competencyAreas.map((area, index) => (
-              <Card
-                key={index}
-                className=" glow-border text-center p-6 group  transition-all duration-500 "
-              >
-                <div className="space-y-4">
-                  <div className="inline-flex p-3 rounded-lg bg-gradient-primary    transition-all duration-300">
-                    <area.icon className="w-6 h-6 text-[#6bdaff]" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-primary-glow">
-                      {area.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {area.questions} questions per step
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+      <Competency />
 
       {/* Security Notice */}
-      <section className="py-20 ">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <Card className=" border-destructive/20 p-8">
-            <div className="space-y-6">
-              <div className="inline-flex p-4 rounded-xl bg-destructive/20 shadow-[0_0_20px_hsl(var(--destructive)/0.3)]">
-                <AlertCircle className="w-8 h-8 text-destructive-glow" />
-              </div>
-              <div className="space-y-4">
-                <h3 className="text-2xl font-bold text-destructive-glow">
-                  Important Assessment Guidelines
-                </h3>
-                <div className="space-y-2 text-muted-foreground">
-                  <p>
-                    • Assessments are timed and must be completed in one session
-                  </p>
-                  <p>
-                    • Secure browser mode prevents external tab access during
-                    exam
-                  </p>
-                  <p>
-                    • Step 1 failure (score &lt;25%) prevents retaking - choose
-                    wisely
-                  </p>
-                  <p>• Live monitoring may be active during assessment</p>
-                  <p>
-                    • Questions are randomized from competency-specific pools
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </section>
+      <Security />
     </div>
   );
 };
