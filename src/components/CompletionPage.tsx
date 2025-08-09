@@ -52,7 +52,7 @@ const CompletionPage = ({
   const userName = "John Doe"; // Replace with real user name if available
 
   return (
-    <div className="text-center space-y-8 max-w-3xl mx-auto p-8  ">
+    <div className="text-center space-y-8 max-w-3xl mx-auto p-8   glow-border glass-card">
       <h1 className="text-4xl font-bold text-primary-glow">
         🎉 Congratulations!
       </h1>

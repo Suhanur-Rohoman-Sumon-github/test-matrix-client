@@ -1,40 +1,44 @@
-// src/features/auth/auth.slice.ts
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RootState } from "../../store";
+import { createSlice } from '@reduxjs/toolkit';
+import { RootState } from '../../store';
 
 export type TUser = {
-  userId: string;
-  role: string;
-  iat: number;
-  exp: number;
-};
+    userId:string
+    role:string
+    iat:number
+    exp:number
+}
 
 type TAuthState = {
-  user: TUser | null;
-  token:string
+    user: TUser | null;
+    token: string | null;
 };
 
 const initialState: TAuthState = {
-  user: null,
-  token:null
+    user: null,
+    token: null,
 };
 
 const authSlice = createSlice({
-  name: "auth",
-  initialState,
-  reducers: {
-    setUser: (state, action: PayloadAction<TUser | null>) => {
-      state.user = action.payload;
+    name: 'auth',
+    initialState: initialState,
+    reducers: {
+        setUser: (state, action) => {
+            
+            
+            const { user, token } = action.payload;
+            state.user = user;
+            state.token = token;
+        },
+        logOut: (state) => {
+            state.user = null;
+            state.token = null;
+        },
     },
-    logOut: (state) => {
-      state.user = null;
-    },
-  },
 });
 
 export const { setUser, logOut } = authSlice.actions;
 export default authSlice.reducer;
 
-// Selectors
-export const currentUser = (state: RootState) => state.auth.user;
-export const isLoggedIn = (state: RootState) => Boolean(state.auth.user);
+
+export const useToken = (state:RootState)=>state.auth.token
+export const currentUser = (state:RootState)=>state.auth.user
