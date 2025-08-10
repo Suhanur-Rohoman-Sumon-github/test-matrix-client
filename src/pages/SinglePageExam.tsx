@@ -13,15 +13,20 @@ import { useGetAllQuestionsQuery } from "@/redux/fetures/questions/question.api"
 import { useParams } from "react-router-dom";
 import { useExamSecurity } from "@/components/exam/useExamSecurity";
 import { MockQuestion } from "./MockQuestion";
-import { useUpdateUserStepProgressMutation } from "@/redux/fetures/Steps/Steps.api";
 import { useCurrentUser } from "@/utils/getCurrentUser";
+import {
+  useGetSingleUserQuery,
+  useUpdateUserStepProgressMutation,
+} from "@/redux/fetures/user/user.api";
 
 // Separate MockQuestion so hooks order in main component never changes
 
 const SinglePageExam = () => {
   useExamSecurity();
+
   const { questionId } = useParams();
-  console.log(questionId);
+  console.log("QuestionId (step):", questionId);
+
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(600);
   const [currentQuestion, setCurrentQuestion] = useState(1);
@@ -33,9 +38,49 @@ const SinglePageExam = () => {
   const { data, isLoading, error } = useGetAllQuestionsQuery(questionId);
   const [updateUser] = useUpdateUserStepProgressMutation();
   const questions = data?.data || [];
-  const user = useCurrentUser();
 
-  // Handle timer
+  const user = useCurrentUser();
+  const { data: freshUser, isLoading: userLoading } = useGetSingleUserQuery(
+    user?._id,
+    {
+      skip: !user?._id, // Don't run if no user
+    }
+  );
+
+  // Store existing certification-based score if any
+  const [existingScore, setExistingScore] = useState<number | null>(null);
+
+  // Check if user already has a certification for this step and skip questions if yes
+  useEffect(() => {
+    if (!freshUser) return;
+
+    // Use questionId from URL param (the step user is trying to take)
+    const stepNumber = questionId ? Number(questionId) : 1;
+
+    // Get user's certification for the current step (the step user is taking)
+    const cert = freshUser.certifications
+      ? freshUser.certifications[`step${stepNumber}`]
+      : null;
+
+    // Certification to approximate score mapping
+    const certScoreMap: Record<string, number> = {
+      Fail: 0,
+      A1: 40,
+      A2: 60,
+      B1: 50,
+      B2: 70,
+      C1: 80,
+      C2: 90,
+    };
+
+    // If certification exists and not "Fail", show completion page directly
+    if (cert && cert !== "Fail") {
+      setExistingScore(certScoreMap[cert] || 0);
+      setIsSubmitted(true);
+    }
+  }, [freshUser, questionId]);
+
+  // Timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isExamActive && timeRemaining > 0) {
@@ -54,6 +99,7 @@ const SinglePageExam = () => {
     return () => clearInterval(interval);
   }, [isExamActive, timeRemaining]);
 
+  // Handle answer option select
   const handleOptionSelect = (index: number) => {
     const currentQ = questions[currentQuestion - 1];
     const correctIndex = currentQ.correct;
@@ -69,6 +115,7 @@ const SinglePageExam = () => {
     }
   };
 
+  // Calculate score from selected answers
   const calculateScore = () => {
     return questions.reduce(
       (acc, q, i) => acc + (selectedOptions[i] === q.correct ? 1 : 0),
@@ -76,21 +123,36 @@ const SinglePageExam = () => {
     );
   };
 
-  const handleSubmit = () => {
-    const score = calculateScore();
-    console.log(score);
+  // Handle exam submission
+  const handleSubmit = async () => {
+    const totalCorrect = calculateScore();
+    const score = (totalCorrect / questions.length) * 100;
+    console.log("Score to update:", score);
 
-    updateUser({
-      userId: user._id,
-      score: score,
-    });
+    try {
+      await updateUser({
+        userId: user._id,
+        score: score,
+      }).unwrap(); // unwrap throws on error
+
+      // Optionally: toast.success("Progress updated");
+    } catch (error) {
+      console.error("Failed to update user step progress:", error);
+      toast.error("Failed to update user progress.");
+    }
 
     setIsSubmitted(true);
     setIsExamActive(false);
     confetti({ particleCount: 200, spread: 100, origin: { y: 0.3 } });
   };
 
-  // Conditional UI, no early return
+  // Decide final score to show (from DB certification or calculated)
+  const finalScore =
+    existingScore !== null
+      ? existingScore
+      : (calculateScore() / questions.length) * 100;
+
+  // Conditional UI
   const loadingUI = isLoading ? <p>Loading.....</p> : null;
   const emptyUI =
     !isLoading && questions.length === 0 ? <p>No questions available</p> : null;
@@ -103,8 +165,8 @@ const SinglePageExam = () => {
             emptyUI ||
             (isSubmitted ? (
               <CompletionPage
-                step={1}
-                score={calculateScore()}
+                step={questionId ? Number(questionId) : 1}
+                score={finalScore}
                 total={questions.length}
                 questions={questions}
                 selectedOptions={selectedOptions}

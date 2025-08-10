@@ -25,9 +25,9 @@ export const usersApi = baseApi.injectEndpoints({
       }),
     }),
 
-    getSingleUser: builder.query<TUser, string>({
+    getSingleUser: builder.query({
       query: (userId) => ({
-        url: `/users/${userId}`,
+        url: `/users/${userId}/state`,
         method: "GET",
       }),
     }),
@@ -48,12 +48,12 @@ export const usersApi = baseApi.injectEndpoints({
     }),
 
     updateUserStepProgress: builder.mutation<TUser, { userId: string; score: number }>({
-      query: ({ userId, score }) => ({
-        url: `/users/${userId}/step-progress`,
-        method: "PUT",
-        body: { score },
-      }),
-    }),
+  query: ({ userId, score }) => ({
+    url: `/users/${userId}/state`,  // <-- match backend route here
+    method: "PUT",
+    body: { score },
+  }),
+}),
   }),
 });
 

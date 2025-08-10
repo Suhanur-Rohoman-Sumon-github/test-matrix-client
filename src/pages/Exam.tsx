@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import confetti from "canvas-confetti";
 import {
   Card,
   CardContent,
@@ -9,13 +9,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
-  Clock,
-  Shield,
-  Award,
   Play,
-  CheckCircle,
   ArrowRight,
   Brain,
   Code,
@@ -29,18 +24,23 @@ import {
   Book,
   Headphones,
   Text,
+  Shield,
+  Award,
+  Clock,
+  CheckCircle,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+
 import CompletionPage from "@/components/CompletionPage";
 import Hero from "@/components/exam/Hero";
 import Competency from "@/components/exam/Competency";
 import Security from "@/components/exam/Security";
 import { useNavigate } from "react-router-dom";
 import { useGetAllCategoriesQuery } from "@/redux/fetures/Steps/Steps.api";
-import { currentUser } from "@/redux/fetures/auth/auth.slice";
 import { useCurrentUser } from "@/utils/getCurrentUser";
+import { useGetSingleUserQuery } from "@/redux/fetures/user/user.api";
+import { toast } from "sonner";
 
-// Map icon names (from your API) to actual imported icon components
+// Icon map
 const iconMap = {
   Brain,
   Code,
@@ -64,17 +64,58 @@ const iconMap = {
 
 const Exam = () => {
   const user = useCurrentUser();
-  const { toast } = useToast();
+  const { data: freshUser, isLoading: userLoading } = useGetSingleUserQuery(
+    user?._id,
+    { skip: !user?._id }
+  );
+
   const navigate = useNavigate();
 
   const { data, error, isLoading } = useGetAllCategoriesQuery(undefined);
 
-  // Show loading message if loading
-  if (isLoading) {
+  const [directCompletionForStep, setDirectCompletionForStep] = useState<
+    number | null
+  >(null);
+
+  // State to hold questions & selected answers for the completion page
+  const [completionData, setCompletionData] = useState<{
+    questions: any[];
+    selectedOptions: number[];
+  }>({ questions: [], selectedOptions: [] });
+
+  // Mock function to fetch questions and user's selected answers for a step
+  // Replace with your actual fetching logic
+  const fetchStepCompletionData = async (step: number) => {
+    // Example mock questions for step
+    const mockQuestions = [
+      {
+        question: "What is React?",
+        options: ["Library", "Framework", "Language", "Tool"],
+        correct: 0,
+      },
+      {
+        question: "What does JSX stand for?",
+        options: [
+          "JavaScript XML",
+          "Java Source X",
+          "JavaScript Example",
+          "None",
+        ],
+        correct: 0,
+      },
+    ];
+
+    // Example mock selected options - replace with user's answers from DB/state
+    const mockSelectedOptions = [0, 0]; // both correct
+
+    return { questions: mockQuestions, selectedOptions: mockSelectedOptions };
+  };
+
+  // Show loading or error
+  if (isLoading || userLoading) {
     return <p className="text-center p-10">Loading...</p>;
   }
 
-  // Show error if exists
   if (error) {
     return (
       <p className="text-center p-10 text-red-600">
@@ -83,11 +124,44 @@ const Exam = () => {
     );
   }
 
-  const currentUserStep = user?.currentStep;
+  const currentUserStep = freshUser?.data?.currentStep ?? 1;
+  const stepScores = freshUser?.data?.stepScores || {};
 
-  const startExam = (stepNumber: number) => {
-    navigate(`/exam/${stepNumber}`);
+  const startExam = async (stepNumber: number, stepId: string) => {
+    const scoreForStep = stepScores[`step${stepNumber}`];
+
+    if (scoreForStep === undefined) {
+      // User not completed this step, navigate to exam
+      navigate(`/exam/${stepId}`);
+      return;
+    }
+
+    // Fetch questions and answers from DB/state, not mock ideally
+    const { questions, selectedOptions } = await fetchStepCompletionData(
+      stepNumber
+    );
+
+    // Wait or refetch fresh user data before showing completion page
+    // e.g., await refetchUser();
+
+    setCompletionData({ questions, selectedOptions });
+    setDirectCompletionForStep(stepNumber);
+    toast.success(`You already completed Step ${stepNumber}. Showing results.`);
   };
+
+  // If user wants to see completion page directly:
+  if (directCompletionForStep !== null) {
+    return (
+      <CompletionPage
+        step={directCompletionForStep}
+        score={stepScores[`step${directCompletionForStep}`] || 0}
+        total={completionData.questions.length}
+        questions={completionData.questions}
+        selectedOptions={completionData.selectedOptions}
+        onClose={() => setDirectCompletionForStep(null)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background cyber-grid">
@@ -107,8 +181,6 @@ const Exam = () => {
           <div className="space-y-8">
             {data?.data?.map((step) => {
               const IconComponent = iconMap[step.icon] || Brain;
-
-              // Disable if step is greater than currentUserStep (cannot skip ahead)
               const isDisabled = step.step > currentUserStep;
 
               return (
@@ -144,9 +216,9 @@ const Exam = () => {
                       <Button
                         variant="cyber"
                         size="lg"
-                        onClick={() => startExam(step._id)}
+                        onClick={() => startExam(step.step, step._id)} // Pass both step and _id
                         className="group/btn"
-                        disabled={isDisabled} // Disable if not allowed
+                        disabled={isDisabled}
                         title={
                           isDisabled
                             ? "Complete previous steps before starting this one"
@@ -159,7 +231,7 @@ const Exam = () => {
                       </Button>
                     </div>
                   </CardHeader>
-                  <CardContent>{/* ...rest unchanged */}</CardContent>
+                  <CardContent>{/* Additional info here */}</CardContent>
                 </Card>
               );
             })}

@@ -12,17 +12,24 @@ interface Question {
 }
 
 interface CompletionPageProps {
-  step: 1 | 2 | 3;
+  onClose?: () => void;
+  step: number;
   score: number;
   total: number;
   questions: Question[];
   selectedOptions: number[];
 }
 
+// Updated getCertification so 100% always passes
 const getCertification = (
-  step: 1 | 2 | 3,
+  step: number,
   percent: number
 ): { certification: string; canRetake: boolean; nextStep?: number } => {
+  if (percent >= 100) {
+    // Always award highest level for perfect score
+    return { certification: "Success", canRetake: false, nextStep: step + 1 };
+  }
+
   if (step === 1) {
     if (percent < 25)
       return { certification: "Fail", canRetake: false, nextStep: 1 };
@@ -57,14 +64,20 @@ const CompletionPage = ({
   total,
   questions,
   selectedOptions,
+  onClose,
 }: CompletionPageProps) => {
   const certificateRef = useRef<HTMLDivElement>(null);
-
   const user = useCurrentUser();
 
-  const percent = (score / total) * 100;
+  // Fallback for step so Step NaN never happens
+  const safeStep = Number.isFinite(step) && step > 0 ? step : 1;
+
+  // Safe percent calculation to avoid division by zero
+  const rawPercent = total > 0 ? (score / total) * 100 : 0;
+  const percent = Math.min(rawPercent, 100);
+
   const { certification, canRetake, nextStep } = getCertification(
-    step,
+    safeStep,
     percent
   );
 
@@ -83,7 +96,7 @@ const CompletionPage = ({
     if (element) {
       const opt = {
         margin: 0.5,
-        filename: `${user.name}-certificate.pdf`,
+        filename: `${user?.name}-certificate.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: { scale: 2 },
         jsPDF: { unit: "in", format: "a4", orientation: "landscape" },
@@ -98,11 +111,10 @@ const CompletionPage = ({
         🎉 Assessment Complete!
       </h1>
       <p className="text-lg text-muted-foreground">
-        You completed Step {step} of the assessment.
+        You completed Step {safeStep} of the assessment.
       </p>
       <div className="text-2xl font-semibold">
-        Your Score: <span className="text-primary">{score}</span> / {total} (
-        {percent.toFixed(2)}%)
+        Your Score: ({percent.toFixed(2)}%)
       </div>
       <div className="text-3xl font-bold text-accent-glow mb-6">
         Certification: {certification}
@@ -118,22 +130,22 @@ const CompletionPage = ({
             <>
               <div
                 ref={certificateRef}
-                className="bg-gradient-to-r bg-primary  px-16 py-14 rounded-3xl shadow-2xl max-w-4xl mx-auto relative border-4 border-white text-black"
+                className="bg-gradient-to-r bg-primary px-16 py-14 rounded-3xl shadow-2xl max-w-4xl mx-auto relative border-4 border-white text-black"
                 style={{ fontFamily: "'Georgia', serif" }}
               >
-                <h2 className="text-4xl font-extrabold mb-4 tracking-widest uppercase drop-shadow-lg ">
+                <h2 className="text-4xl font-extrabold mb-4 tracking-widest uppercase drop-shadow-lg">
                   Certificate of Achievement
                 </h2>
                 <p className="text-lg mb-6 italic opacity-90">
                   This is proudly presented to
                 </p>
                 <h3 className="text-3xl font-bold mb-6 tracking-wide drop-shadow-md">
-                  {user.name}
+                  {user?.name}
                 </h3>
                 <p className="text-xl mb-8 leading-relaxed max-w-xl mx-auto opacity-90">
-                  In recognition of successfully completing Step {step} of the
-                  assessment, demonstrating exceptional knowledge and skill at
-                  the <strong>{certification}</strong> level.
+                  In recognition of successfully completing Step {safeStep} of
+                  the assessment, demonstrating exceptional knowledge and skill
+                  at the <strong>{certification}</strong> level.
                 </p>
                 <p className="text-sm opacity-80 mb-12">
                   Awarded on:{" "}
@@ -195,15 +207,9 @@ const CompletionPage = ({
             </>
           )}
 
-          {nextStep && nextStep > step && (
+          {nextStep && nextStep > safeStep && (
             <p className="text-green-600 font-semibold mt-6">
               Congratulations! You can proceed to Step {nextStep}.
-            </p>
-          )}
-
-          {!canRetake && certification !== "Fail" && (
-            <p className="text-yellow-600 font-semibold mt-6">
-              Please review your results carefully.
             </p>
           )}
         </>

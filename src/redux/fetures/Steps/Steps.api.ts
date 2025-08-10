@@ -41,18 +41,11 @@ export const categoryApi = baseApi.injectEndpoints({
         method: "DELETE",
       }),
     }),
-    updateUserStepProgress: builder.mutation<
-  TUser, 
-  { userId: string; score: number }
->({
-  query: ({ userId,  score }) => ({
-    url: `/users/${userId}/step-progress`,
-    method: 'PUT',
-    body: { score },
-  }),
+
+    
 }),
-  }),
-});
+  })
+
 
 export const {
   useCreateCategoryMutation,
@@ -60,5 +53,5 @@ export const {
   useGetSingleCategoryQuery,
   useUpdateCategoryMutation,
   useDeleteCategoryMutation,
-  useUpdateUserStepProgressMutation
+  
 } = categoryApi;
