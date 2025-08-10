@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,9 +24,12 @@ import {
   Target,
   AlertCircle,
 } from "lucide-react";
+import { useGetAllUsersQuery } from "@/redux/fetures/user/user.api";
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
+
+  const { data } = useGetAllUsersQuery(undefined);
 
   // Mock data for analytics
   const stats = [
@@ -58,37 +60,6 @@ const Admin = () => {
       change: "+5%",
       icon: Target,
       color: "text-warning",
-    },
-  ];
-
-  const recentUsers = [
-    {
-      name: "John Smith",
-      email: "john@example.com",
-      level: "B2",
-      status: "Active",
-      date: "2024-01-15",
-    },
-    {
-      name: "Sarah Johnson",
-      email: "sarah@example.com",
-      level: "A1",
-      status: "Completed",
-      date: "2024-01-14",
-    },
-    {
-      name: "Mike Wilson",
-      email: "mike@example.com",
-      level: "C1",
-      status: "In Progress",
-      date: "2024-01-13",
-    },
-    {
-      name: "Emma Davis",
-      email: "emma@example.com",
-      level: "A2",
-      status: "Failed",
-      date: "2024-01-12",
     },
   ];
 
@@ -204,7 +175,7 @@ const Admin = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {recentUsers.slice(0, 6).map((user, index) => (
+                    {data?.data?.slice(0, 6).map((user, index) => (
                       <div key={index} className="flex items-center space-x-3">
                         <div className="w-2 h-2 bg-primary rounded-full" />
                         <div className="flex-1 min-w-0">
@@ -272,7 +243,7 @@ const Admin = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {recentUsers.map((user, index) => (
+                      {data?.data?.map((user, index) => (
                         <tr key={index} className="border-b border-border/50">
                           <td className="py-3 px-2 text-white">{user.name}</td>
                           <td className="py-3 px-2 text-muted-foreground">

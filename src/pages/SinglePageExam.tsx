@@ -9,12 +9,17 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import CompletionPage from "@/components/CompletionPage";
 import { useGetAllQuestionsQuery } from "@/redux/fetures/questions/question.api";
-import { MockQuestion } from "./MockQuestion";
+
 import { useParams } from "react-router-dom";
+import { useExamSecurity } from "@/components/exam/useExamSecurity";
+import { MockQuestion } from "./MockQuestion";
+import { useUpdateUserStepProgressMutation } from "@/redux/fetures/Steps/Steps.api";
+import { useCurrentUser } from "@/utils/getCurrentUser";
 
 // Separate MockQuestion so hooks order in main component never changes
 
 const SinglePageExam = () => {
+  useExamSecurity();
   const { questionId } = useParams();
   console.log(questionId);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -25,8 +30,10 @@ const SinglePageExam = () => {
     (number | undefined)[]
   >([]);
 
- const { data, isLoading, error } = useGetAllQuestionsQuery(questionId);
+  const { data, isLoading, error } = useGetAllQuestionsQuery(questionId);
+  const [updateUser] = useUpdateUserStepProgressMutation();
   const questions = data?.data || [];
+  const user = useCurrentUser();
 
   // Handle timer
   useEffect(() => {
@@ -70,6 +77,14 @@ const SinglePageExam = () => {
   };
 
   const handleSubmit = () => {
+    const score = calculateScore();
+    console.log(score);
+
+    updateUser({
+      userId: user._id,
+      score: score,
+    });
+
     setIsSubmitted(true);
     setIsExamActive(false);
     confetti({ particleCount: 200, spread: 100, origin: { y: 0.3 } });
@@ -88,6 +103,7 @@ const SinglePageExam = () => {
             emptyUI ||
             (isSubmitted ? (
               <CompletionPage
+                step={1}
                 score={calculateScore()}
                 total={questions.length}
                 questions={questions}

@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit'
 import authSlice from './fetures/auth/auth.slice'
+
 import { baseApi } from './api/baseApi'
 
 
@@ -8,7 +9,6 @@ import { baseApi } from './api/baseApi'
 export const store = configureStore({
   reducer: {
     auth: authSlice,
-   
     [baseApi.reducerPath]: baseApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>

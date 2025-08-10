@@ -1,4 +1,5 @@
 import { baseApi } from "../../api/baseApi";
+import { TUser } from "../auth/auth.slice";
 
 export interface Category {
   id: string;
@@ -40,6 +41,16 @@ export const categoryApi = baseApi.injectEndpoints({
         method: "DELETE",
       }),
     }),
+    updateUserStepProgress: builder.mutation<
+  TUser, 
+  { userId: string; score: number }
+>({
+  query: ({ userId,  score }) => ({
+    url: `/users/${userId}/step-progress`,
+    method: 'PUT',
+    body: { score },
+  }),
+}),
   }),
 });
 
@@ -49,4 +60,5 @@ export const {
   useGetSingleCategoryQuery,
   useUpdateCategoryMutation,
   useDeleteCategoryMutation,
+  useUpdateUserStepProgressMutation
 } = categoryApi;

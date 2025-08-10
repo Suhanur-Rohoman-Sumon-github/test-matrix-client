@@ -9,6 +9,8 @@ import Services from "@/pages/Services";
 import { createBrowserRouter } from "react-router-dom";
 import ProtectedRoute from "./protectedRoute/ProtectedRoute";
 import SinglePageExam from "@/pages/SinglePageExam";
+import Admin from "@/pages/Admin";
+import AdminProtectedRoute from "./AdminProtectedRoute/AdminProtectedRoute";
 
 const router = createBrowserRouter([
   {
@@ -43,12 +45,21 @@ const router = createBrowserRouter([
         path: "/verify-email",
         element: <OTPVerification />,
       },
+
       {
         path: "/exam/:questionId",
         element: (
           <ProtectedRoute>
             <SinglePageExam />
           </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/admin",
+        element: (
+          <AdminProtectedRoute>
+            <Admin />
+          </AdminProtectedRoute>
         ),
       },
     ],

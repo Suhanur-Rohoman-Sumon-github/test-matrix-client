@@ -10,6 +10,8 @@ import { useCurrentUser } from "@/utils/getCurrentUser";
 const Main = () => {
   const user = useCurrentUser();
 
+  console.log(user);
+
   useLoadUserFromCookie();
 
   return (

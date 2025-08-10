@@ -14,6 +14,9 @@ type DecodedToken = {
   status: string;
   profilePicture: string;
   myChanel: string;
+  currentStep:string
+  certifications:string
+  progressStatus:string
 };
 
 export function useLoadUserFromCookie() {
@@ -27,14 +30,13 @@ export function useLoadUserFromCookie() {
       const decodedToken = jwtDecode<DecodedToken>(accessToken);
 
       const user = {
-        id: decodedToken._id,
-        name: decodedToken.name,
-        username: decodedToken.username,
-        email: decodedToken.email,
-        role: decodedToken.role,
-        status: decodedToken.status,
-        profilePicture: decodedToken.profilePicture,
-        myChanel: decodedToken.myChanel,
+   _id: decodedToken._id,
+    name: decodedToken.name,
+    role: decodedToken.role,
+    email: decodedToken.email,
+    currentStep: decodedToken.currentStep,
+    certifications: decodedToken.certifications,
+    progressStatus: decodedToken.progressStatus,
       };
 
       dispatch(setUser({ user, token: accessToken }));
