@@ -35,6 +35,7 @@ import CompletionPage from "@/components/CompletionPage";
 import Hero from "@/components/exam/Hero";
 import Competency from "@/components/exam/Competency";
 import Security from "@/components/exam/Security";
+import { useNavigate, useRouteError } from "react-router-dom";
 
 const Exam = () => {
   const questions = [
@@ -113,34 +114,10 @@ const Exam = () => {
 
     // Add 43 more questions here in same format
   ];
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [currentStep, setCurrentStep] = useState<number | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState(10);
-  const [currentQuestion, setCurrentQuestion] = useState(1);
-  const [isExamActive, setIsExamActive] = useState(false);
-  const [selectedOptions, setSelectedOptions] = useState<
-    (number | undefined)[]
-  >([]);
+
   const { toast } = useToast();
 
-  const handleOptionSelect = (index: number) => {
-    const currentQ = questions[currentQuestion - 1];
-    const correctIndex = currentQ.correct;
-    const alreadySelected = selectedOptions[currentQuestion - 1] !== undefined;
-    if (alreadySelected) return;
-
-    const updated = [...selectedOptions];
-    updated[currentQuestion - 1] = index;
-    setSelectedOptions(updated);
-
-    if (index === correctIndex) {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.3 },
-      });
-    }
-  };
+  const navigate = useNavigate();
 
   const examSteps = [
     {
@@ -210,26 +187,6 @@ const Exam = () => {
     { name: "Writing Skills", icon: Text, questions: 7 },
   ];
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isExamActive && timeRemaining > 0) {
-      interval = setInterval(() => {
-        setTimeRemaining((prev) => {
-          if (prev <= 1) {
-            setIsExamActive(false);
-            toast({
-              title: "Time's Up!",
-              description: "Your assessment has been automatically submitted.",
-            });
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isExamActive, timeRemaining, toast]);
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -237,14 +194,7 @@ const Exam = () => {
   };
 
   const startExam = (stepNumber: number) => {
-    setCurrentStep(stepNumber);
-    setIsExamActive(true);
-    setCurrentQuestion(1);
-    setTimeRemaining(2640);
-    toast({
-      title: "Assessment Started",
-      description: `Step ${stepNumber} assessment is now active. Good luck!`,
-    });
+    navigate(`/exam/${stepNumber}`);
   };
 
   const calculateScore = () => {
@@ -253,146 +203,10 @@ const Exam = () => {
     }, 0);
   };
 
-  const handleSubmit = () => {
-    setIsSubmitted(true);
-    confetti({
-      particleCount: 200,
-      spread: 100,
-      origin: { y: 0.3 },
-    });
-  };
+ 
+  
 
-  const MockQuestion = () => {
-    const questionObj = questions[currentQuestion - 1];
-    const selected = selectedOptions[currentQuestion - 1];
-    const correct = questionObj.correct;
-
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Badge
-              variant="outline"
-              className="text-primary-glow border-primary/40"
-            >
-              Question {currentQuestion} of {questions.length}
-            </Badge>
-            <Badge
-              variant="outline"
-              className="text-accent-glow border-accent/40"
-            >
-              {questionObj.area}
-            </Badge>
-          </div>
-          <div className="flex items-center gap-2 text-destructive-glow">
-            <Timer className="w-4 h-4" />
-            <span className="font-mono text-lg">
-              {formatTime(timeRemaining)}
-            </span>
-          </div>
-        </div>
-
-        <Progress
-          value={(currentQuestion / questions.length) * 100}
-          className="h-2"
-        />
-
-        <div className="space-y-4">
-          <h3 className="text-xl font-semibold text-primary-glow">
-            {questionObj.question}
-          </h3>
-
-          <div className="space-y-3">
-            {questionObj.options.map((option, index) => {
-              const isSelected = selected === index;
-              const isCorrect = correct === index;
-              let bgStyle = "";
-              let textStyle = "text-muted-foreground";
-
-              if (selected !== undefined) {
-                if (isCorrect) {
-                  bgStyle = " glass-card border-green-600";
-                  textStyle = "text-white";
-                } else if (isSelected && !isCorrect) {
-                  bgStyle = " border-red-600 opacity-80";
-                  textStyle = "text-white";
-                }
-              }
-
-              return (
-                <div
-                  key={index}
-                  className={`p-4 rounded-lg border transition-all duration-300 cursor-pointer hover:border-primary/40 hover:bg-primary/5 ${bgStyle}`}
-                  onClick={() => handleOptionSelect(index)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full border-2 border-primary/40 flex items-center justify-center">
-                      <span className="text-xs font-medium text-primary-glow">
-                        {String.fromCharCode(65 + index)}
-                      </span>
-                    </div>
-                    <span className={`${textStyle}`}>{option}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="flex justify-between">
-          <Button
-            variant="outline"
-            disabled={currentQuestion <= 1}
-            onClick={() => setCurrentQuestion((q) => q - 1)}
-          >
-            Previous
-          </Button>
-
-          {currentQuestion === questions.length ? (
-            <Button variant="cyber" onClick={handleSubmit}>
-              Submit Exam
-              <ArrowRight className="w-4 h-4 ml-2 text-white" />
-            </Button>
-          ) : (
-            <Button
-              variant="cyber"
-              onClick={() => setCurrentQuestion((q) => q + 1)}
-              disabled={currentQuestion >= questions.length}
-            >
-              Next Question
-              <ArrowRight className="w-4 h-4 ml-2 text-white" />
-            </Button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  if ((isExamActive && currentStep) || isSubmitted) {
-    const score = calculateScore();
-    return (
-      <div className="min-h-screen bg-background cyber-grid ">
-        <div className="pt-24 pb-8">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 ">
-            {isSubmitted ? (
-              <CompletionPage
-                score={score}
-                total={questions.length}
-                questions={questions}
-                selectedOptions={selectedOptions}
-              />
-            ) : (
-              <Card className=" border-primary/20">
-                <CardContent className="p-8">
-                  <MockQuestion />
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
+ 
 
   return (
     <div className="min-h-screen bg-background cyber-grid">
