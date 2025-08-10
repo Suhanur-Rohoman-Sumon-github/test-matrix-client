@@ -5,7 +5,7 @@ import { logOut } from '../fetures/auth/auth.slice';
 
 const baseQuery = fetchBaseQuery({
   baseUrl: import.meta.env.VITE_PUBLIC_BASE_API,
-  credentials: 'include',
+  
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth.token;
     if (token) {
