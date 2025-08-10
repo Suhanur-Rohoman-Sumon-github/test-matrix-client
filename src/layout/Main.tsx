@@ -4,7 +4,12 @@ import Footer from "@/pages/Footer";
 
 import { Outlet } from "react-router-dom";
 import { useLoadUserFromCookie } from "@/utils/useLoadUserFromCookie";
+import { currentUser } from "@/redux/fetures/auth/auth.slice";
+import { useCurrentUser } from "@/utils/getCurrentUser";
+
 const Main = () => {
+  const user = useCurrentUser();
+
   useLoadUserFromCookie();
 
   return (

@@ -7,28 +7,47 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, RefreshCw, Mail, Clock } from "lucide-react";
+import {
+  useUpdateVerifiedUserMutation,
+  useVerifyEmailQuery,
+} from "@/redux/fetures/auth/auth.api";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface OTPVerificationProps {
   email: string;
-  onVerificationSuccess: () => void;
-  onResendOTP: () => void;
 }
 
-const OTPVerification = ({
-  email,
-  onVerificationSuccess,
-  onResendOTP,
-}: OTPVerificationProps) => {
+const OTPVerification = () => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
+  const [timeLeft, setTimeLeft] = useState(300);
   const [isVerifying, setIsVerifying] = useState(false);
   const [canResend, setCanResend] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const emailFromQuery = params.get("email");
+      if (emailFromQuery) setEmail(emailFromQuery);
+    }
+  }, []);
+
+  const { data, isLoading } = useVerifyEmailQuery(email, {
+    skip: !email, // skip the query if email is falsy
+  });
+
+  const [verifyEmail] = useUpdateVerifiedUserMutation();
+
+  if (isLoading) {
+    <p>loading.....</p>;
+  }
+  const verificationCode = data?.data?.emailVerificationCode ?? "";
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -57,7 +76,6 @@ const OTPVerification = ({
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Auto-focus next input
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
@@ -75,31 +93,25 @@ const OTPVerification = ({
   const handleVerify = async () => {
     const otpValue = otp.join("");
     if (otpValue.length !== 6) {
-      toast({
-        title: "Invalid OTP",
-        description: "Please enter the complete 6-digit code.",
-        variant: "destructive",
-      });
+      toast.error("invlid otp");
+      return;
+    }
+
+    if (!verificationCode) {
+      toast.warning("Waiting for verification code");
       return;
     }
 
     setIsVerifying(true);
 
-    // Simulate API call
     setTimeout(() => {
-      if (otpValue === "123456") {
-        // Mock success
-        toast({
-          title: "Verification Successful",
-          description: "Your email has been verified successfully!",
-        });
-        onVerificationSuccess();
+      if (otpValue === verificationCode) {
+        verifyEmail(verificationCode);
+        navigate("/login");
+        toast.success("Your email has been verified successfully!");
+        // You can call a callback or redirect here
       } else {
-        toast({
-          title: "Invalid OTP",
-          description: "The code you entered is incorrect. Please try again.",
-          variant: "destructive",
-        });
+        toast.error("Invalid OTP");
         setOtp(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
       }
@@ -111,16 +123,13 @@ const OTPVerification = ({
     setTimeLeft(300);
     setCanResend(false);
     setOtp(["", "", "", "", "", ""]);
-    onResendOTP();
-    toast({
-      title: "OTP Resent",
-      description: "A new verification code has been sent to your email.",
-    });
+
+    toast.success("OTP Resent");
   };
 
   return (
     <div className="min-h-screen bg-background cyber-grid flex items-center justify-center p-4">
-      <Card className="w-full max-w-md  glow-border">
+      <Card className="w-full max-w-md glow-border">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
             <Mail className="w-8 h-8 text-primary" />
@@ -138,11 +147,10 @@ const OTPVerification = ({
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* OTP Input */}
           <div className="space-y-4">
             <div className="flex justify-center space-x-2">
               {otp.map((digit, index) => (
-                <Input
+                <input
                   key={index}
                   ref={(el) => (inputRefs.current[index] = el)}
                   type="text"
@@ -151,13 +159,11 @@ const OTPVerification = ({
                   value={digit}
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="w-12 h-12 text-center text-xl font-semibold  border-primary/30 focus:border-primary text-white"
+                  className="w-12 h-12 text-center text-xl font-semibold border-primary/30 focus:border-primary text-white bg-transparent border rounded"
                   disabled={isVerifying}
                 />
               ))}
             </div>
-
-            {/* Timer */}
             <div className="flex items-center justify-center gap-2">
               <Clock className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
@@ -169,7 +175,6 @@ const OTPVerification = ({
             </div>
           </div>
 
-          {/* Verify Button */}
           <Button
             onClick={handleVerify}
             disabled={otp.join("").length !== 6 || isVerifying}
@@ -189,7 +194,6 @@ const OTPVerification = ({
             )}
           </Button>
 
-          {/* Resend Section */}
           <div className="text-center space-y-3">
             <p className="text-sm text-muted-foreground">
               Didn't receive the code?
@@ -204,16 +208,6 @@ const OTPVerification = ({
                 ? "Resend Code"
                 : "Resend available in " + formatTime(timeLeft)}
             </Button>
-          </div>
-
-          {/* Help Text */}
-          <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
-            <p className="text-xs text-muted-foreground text-center">
-              For testing purposes, use code:{" "}
-              <Badge variant="outline" className="ml-1 text-primary">
-                123456
-              </Badge>
-            </p>
           </div>
         </CardContent>
       </Card>

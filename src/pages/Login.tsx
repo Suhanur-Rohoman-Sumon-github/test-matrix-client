@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Navigation } from "@/components/Navigation";
+import { Link, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,37 +13,50 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Shield } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useLoginMutation } from "@/redux/fetures/auth/auth.api";
+import { toast } from "sonner";
+import Cookies from "js-cookie";
+import { setUser } from "@/redux/fetures/auth/auth.slice";
+import { useAppDispatch } from "@/redux/hook";
+
+interface LoginFormInputs {
+  email: string;
+  password: string;
+}
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-  const { toast } = useToast();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormInputs>();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const [login, { isLoading }] = useLoginMutation();
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+  const onSubmit = async (data: LoginFormInputs) => {
+    try {
+      const res = await login(data).unwrap();
 
-    toast({
-      title: "Login Successful",
-      description: "Welcome back to Test_School platform",
-    });
+      Cookies.set("accessToken", res.data.accessToken, {
+        expires: 7,
+        sameSite: "strict",
+      });
+      Cookies.set("refreshToken", res.data.refreshToken, {
+        expires: 7,
+        sameSite: "strict",
+      });
 
-    setIsLoading(false);
-  };
+      // Assume res.data.user contains full user info including name
+      dispatch(setUser({ user: res.data.user, token: res.data.accessToken }));
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+      toast.success("Login Successful");
+      navigate("/exam");
+    } catch (error) {
+      toast.error("Login Failed");
+    }
   };
 
   return (
@@ -74,7 +88,11 @@ const Login = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-6"
+                noValidate
+              >
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-foreground">
                     Email Address
@@ -83,15 +101,25 @@ const Login = () => {
                     <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
                       id="email"
-                      name="email"
                       type="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      className="pl-10  border-primary/20 focus:border-primary/40 focus:ring-primary/20"
                       placeholder="Enter your email"
+                      className="pl-10  border-primary/20 focus:border-primary/40 focus:ring-primary/20"
+                      {...register("email", {
+                        required: "Email is required",
+                        pattern: {
+                          value:
+                            /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/,
+                          message: "Invalid email address",
+                        },
+                      })}
+                      aria-invalid={errors.email ? "true" : "false"}
                     />
                   </div>
+                  {errors.email && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.email.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -102,18 +130,23 @@ const Login = () => {
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
                       id="password"
-                      name="password"
                       type={showPassword ? "text" : "password"}
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      required
-                      className="pl-10 pr-10  border-primary/20 focus:border-primary/40 focus:ring-primary/20"
                       placeholder="Enter your password"
+                      className="pl-10 pr-10  border-primary/20 focus:border-primary/40 focus:ring-primary/20"
+                      {...register("password", {
+                        required: "Password is required",
+                        minLength: {
+                          value: 6,
+                          message: "Password must be at least 6 characters",
+                        },
+                      })}
+                      aria-invalid={errors.password ? "true" : "false"}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                      tabIndex={-1}
                     >
                       {showPassword ? (
                         <EyeOff className="w-5 h-5" />
@@ -122,6 +155,11 @@ const Login = () => {
                       )}
                     </button>
                   </div>
+                  {errors.password && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.password.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between">

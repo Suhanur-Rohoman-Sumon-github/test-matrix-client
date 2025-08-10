@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,60 +23,51 @@ import {
   Shield,
   CheckCircle,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useRegistrationMutation } from "@/redux/fetures/auth/auth.api";
+import { toast } from "sonner";
+
+type FormData = {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  terms: boolean;
+};
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [agreed, setAgreed] = useState(false);
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-  const { toast } = useToast();
+  const [registration, { isLoading }] = useRegistrationMutation();
+  const navigate = useNavigate();
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Password Mismatch",
-        description: "Passwords do not match. Please try again.",
-      });
+  const onSubmit = async (data: FormData) => {
+    if (data.password !== data.confirmPassword) {
+      toast.error("Passwords do not match. Please try again.");
       return;
     }
 
-    if (!agreed) {
-      toast({
-        variant: "destructive",
-        title: "Terms Required",
-        description: "Please agree to the terms and conditions.",
-      });
-      return;
+    try {
+      const result = await registration({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      }).unwrap();
+      console.log(result);
+      if (result.success) {
+        navigate(`/verify-email?email=${data.email}`);
+        toast.success(
+          "Registration Successful! Welcome to Test_School. Please verify your email."
+        );
+      }
+    } catch (err: any) {
+      toast.error(err?.data?.message || "An error occurred during sign up.");
     }
-
-    setIsLoading(true);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    toast({
-      title: "Registration Successful!",
-      description: "Welcome to Test_School. Please verify your email to begin.",
-    });
-
-    setIsLoading(false);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
   };
 
   const features = [
@@ -90,7 +83,7 @@ const Register = () => {
       <div className="pt-32 pb-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-6 mb-12">
-            <div className="inline-flex p-4 rounded-xl bg-gradient-primary  ">
+            <div className="inline-flex p-4 rounded-xl bg-gradient-primary">
               <Shield className="w-8 h-8 text-[#6bdaff]" />
             </div>
             <div className="space-y-2">
@@ -98,84 +91,90 @@ const Register = () => {
                 Start Your Assessment Journey
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Create your account and begin testing your digital competencies
-                across 132 assessment questions
+                Create your account and begin testing your English skills across
+                structured levels
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
             {/* Registration Form */}
-            <Card className=" border-primary/20">
+            <Card className="border-primary/20">
               <CardHeader className="space-y-2">
                 <CardTitle className="text-2xl text-center text-primary-glow">
                   Create Account
                 </CardTitle>
                 <CardDescription className="text-center">
-                  Join thousands of professionals certifying their digital
-                  skills
+                  Join thousands of learners improving their English proficiency
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                  {/* Full Name */}
                   <div className="space-y-2">
-                    <Label htmlFor="fullName" className="text-foreground">
-                      Full Name
-                    </Label>
+                    <Label htmlFor="fullName">Full Name</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                       <Input
                         id="fullName"
-                        name="fullName"
-                        type="text"
-                        value={formData.fullName}
-                        onChange={handleInputChange}
-                        required
-                        className="pl-10  border-primary/20 focus:border-primary/40 focus:ring-primary/20"
+                        {...register("name", {
+                          required: "Full name is required",
+                        })}
+                        className="pl-10"
                         placeholder="Enter your full name"
                       />
                     </div>
+                    {errors.name && (
+                      <p className="text-sm text-red-500">
+                        {errors.name.message}
+                      </p>
+                    )}
                   </div>
 
+                  {/* Email */}
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-foreground">
-                      Email Address
-                    </Label>
+                    <Label htmlFor="email">Email Address</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                       <Input
                         id="email"
-                        name="email"
                         type="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        required
-                        className="pl-10  border-primary/20 focus:border-primary/40 focus:ring-primary/20"
+                        {...register("email", {
+                          required: "Email is required",
+                          pattern: {
+                            value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                            message: "Invalid email format",
+                          },
+                        })}
+                        className="pl-10"
                         placeholder="Enter your email"
                       />
                     </div>
+                    {errors.email && (
+                      <p className="text-sm text-red-500">
+                        {errors.email.message}
+                      </p>
+                    )}
                   </div>
 
+                  {/* Password */}
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-foreground">
-                      Password
-                    </Label>
+                    <Label htmlFor="password">Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                       <Input
                         id="password"
-                        name="password"
                         type={showPassword ? "text" : "password"}
-                        value={formData.password}
-                        onChange={handleInputChange}
-                        required
-                        className="pl-10 pr-10  border-primary/20 focus:border-primary/40 focus:ring-primary/20"
+                        {...register("password", {
+                          required: "Password is required",
+                        })}
+                        className="pl-10 pr-10"
                         placeholder="Create a strong password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2"
                       >
                         {showPassword ? (
                           <EyeOff className="w-5 h-5" />
@@ -184,25 +183,25 @@ const Register = () => {
                         )}
                       </button>
                     </div>
+                    {errors.password && (
+                      <p className="text-sm text-red-500">
+                        {errors.password.message}
+                      </p>
+                    )}
                   </div>
 
+                  {/* Confirm Password */}
                   <div className="space-y-2">
-                    <Label
-                      htmlFor="confirmPassword"
-                      className="text-foreground"
-                    >
-                      Confirm Password
-                    </Label>
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                       <Input
                         id="confirmPassword"
-                        name="confirmPassword"
                         type={showConfirmPassword ? "text" : "password"}
-                        value={formData.confirmPassword}
-                        onChange={handleInputChange}
-                        required
-                        className="pl-10 pr-10  border-primary/20 focus:border-primary/40 focus:ring-primary/20"
+                        {...register("confirmPassword", {
+                          required: "Please confirm your password",
+                        })}
+                        className="pl-10 pr-10"
                         placeholder="Confirm your password"
                       />
                       <button
@@ -210,7 +209,7 @@ const Register = () => {
                         onClick={() =>
                           setShowConfirmPassword(!showConfirmPassword)
                         }
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2"
                       >
                         {showConfirmPassword ? (
                           <EyeOff className="w-5 h-5" />
@@ -219,21 +218,22 @@ const Register = () => {
                         )}
                       </button>
                     </div>
+                    {errors.confirmPassword && (
+                      <p className="text-sm text-red-500">
+                        {errors.confirmPassword.message}
+                      </p>
+                    )}
                   </div>
 
+                  {/* Terms */}
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="terms"
-                      checked={agreed}
-                      onCheckedChange={(checked) =>
-                        setAgreed(checked as boolean)
-                      }
-                      className="border-primary/40 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      {...register("terms", {
+                        required: "You must agree to the terms",
+                      })}
                     />
-                    <Label
-                      htmlFor="terms"
-                      className="text-sm text-muted-foreground cursor-pointer"
-                    >
+                    <Label htmlFor="terms" className="text-sm">
                       I agree to the{" "}
                       <Link
                         to="/terms"
@@ -250,15 +250,21 @@ const Register = () => {
                       </Link>
                     </Label>
                   </div>
+                  {errors.terms && (
+                    <p className="text-sm text-red-500">
+                      {errors.terms.message}
+                    </p>
+                  )}
 
+                  {/* Submit */}
                   <Button
                     type="submit"
                     className="w-full"
                     variant="cyber"
                     size="lg"
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                   >
-                    {isLoading ? (
+                    {isSubmitting ? (
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
                         Creating Account...
@@ -271,84 +277,25 @@ const Register = () => {
                     )}
                   </Button>
                 </form>
-
-                <div className="mt-8 pt-6 border-t border-primary/20">
-                  <p className="text-center text-muted-foreground">
-                    Already have an account?{" "}
-                    <Link
-                      to="/login"
-                      className="text-primary hover:text-primary-glow transition-colors font-medium"
-                    >
-                      Sign In
-                    </Link>
-                  </p>
-                </div>
               </CardContent>
             </Card>
 
-            {/* Features Panel */}
+            {/* Features */}
             <div className="space-y-8">
-              <div className=" p-8 space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-2xl font-bold text-primary-glow">
-                    What You'll Get
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Comprehensive digital competency assessment with
-                    professional certification
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  {features.map((feature, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-success-glow flex-shrink-0" />
-                      <span className="text-muted-foreground">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className=" p-8 space-y-6 text-center">
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-primary-glow">
-                    Assessment Overview
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Structured 3-step certification process
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <div className="text-2xl font-bold text-success-glow">
-                      A1-A2
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Foundation
-                    </div>
+              <div className="p-8 space-y-6">
+                <h3 className="text-2xl font-bold text-primary-glow">
+                  What You'll Get
+                </h3>
+                <p className="text-muted-foreground">
+                  Comprehensive English proficiency assessment with
+                  certification
+                </p>
+                {features.map((feature, idx) => (
+                  <div key={idx} className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-success-glow" />
+                    <span className="text-muted-foreground">{feature}</span>
                   </div>
-                  <div className="space-y-2">
-                    <div className="text-2xl font-bold text-primary-glow">
-                      B1-B2
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Intermediate
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-2xl font-bold text-accent-glow">
-                      C1-C2
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Advanced
-                    </div>
-                  </div>
-                </div>
-
-                <Button variant="exam" size="lg" className="w-full" asChild>
-                  <Link to="/exam">View Sample Assessment</Link>
-                </Button>
+                ))}
               </div>
             </div>
           </div>

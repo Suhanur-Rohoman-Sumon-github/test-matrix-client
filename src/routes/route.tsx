@@ -1,3 +1,4 @@
+import OTPVerification from "@/components/OTPVerification";
 import Main from "@/layout/Main";
 import About from "@/pages/About";
 import Exam from "@/pages/Exam";
@@ -35,6 +36,10 @@ const router = createBrowserRouter([
       {
         path: "/register",
         element: <Register />,
+      },
+      {
+        path: "/verify-email",
+        element: <OTPVerification />,
       },
     ],
   },

@@ -4,7 +4,7 @@ import { RootState } from '../store';
 import { logOut } from '../fetures/auth/auth.slice';
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: 'https://booking-system-dun-ten.vercel.app/api',
+  baseUrl: 'http://localhost:5000/api/v1',
   credentials: 'include',
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth.token;
@@ -31,5 +31,5 @@ export const baseApi = createApi({
   reducerPath: 'baseApi',
   baseQuery: baseQueryWithoutRefresh,
   endpoints: () => ({}),
-  tagTypes: ['Rooms', 'Slots', 'Bookings'],
+  tagTypes: ['Rooms', 'Slots', 'Bookings','User','VerificationCode'],
 });
