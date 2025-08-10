@@ -4,7 +4,7 @@ import { RootState } from '../store';
 import { logOut } from '../fetures/auth/auth.slice';
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: 'http://localhost:5000/api/v1',
+  baseUrl: import.meta.env.VITE_PUBLIC_BASE_API,
   credentials: 'include',
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth.token;
@@ -12,8 +12,9 @@ const baseQuery = fetchBaseQuery({
       headers.set('authorization', `Bearer ${token}`);
     }
     return headers;
-  }
+  },
 });
+
 
 // BaseQueryFn type with no refresh token logic
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
