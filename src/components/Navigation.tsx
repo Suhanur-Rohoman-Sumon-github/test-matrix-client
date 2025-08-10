@@ -15,7 +15,7 @@ import Cookies from "js-cookie";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [loadingUser, setLoadingUser] = useState(true); // loading state for user data
+  const [loadingUser, setLoadingUser] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -100,7 +100,10 @@ export const Navbar = () => {
                   className="w-48 bg-black border border-primary/20"
                 >
                   <DropdownMenuItem asChild>
-                    <Link to="/profile" className="flex items-center gap-2">
+                    <Link
+                      to={`${user?.role === "admin" ? "/admin" : "/profile"}`}
+                      className="flex items-center gap-2"
+                    >
                       <User className="w-4 h-4" />
                       My Profile
                     </Link>

@@ -11,6 +11,7 @@ import ProtectedRoute from "./protectedRoute/ProtectedRoute";
 import SinglePageExam from "@/pages/SinglePageExam";
 import Admin from "@/pages/Admin";
 import AdminProtectedRoute from "./AdminProtectedRoute/AdminProtectedRoute";
+import UserProfile from "@/pages/UserProfile";
 
 const router = createBrowserRouter([
   {
@@ -44,6 +45,10 @@ const router = createBrowserRouter([
       {
         path: "/verify-email",
         element: <OTPVerification />,
+      },
+      {
+        path: "/profile",
+        element: <UserProfile />,
       },
 
       {
